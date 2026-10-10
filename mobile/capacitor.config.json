@@ -3,8 +3,7 @@
   "appName": "Story Mapper",
   "webDir": "www",
   "android": {
-    "allowMixedContent": false,
-    "webContentsDebuggingEnabled": false
+    "allowMixedContent": false
   },
   "plugins": {
     "SystemBars": {

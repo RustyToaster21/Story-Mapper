@@ -20,6 +20,7 @@ Or with a USB cable and *USB debugging* turned on: `adb install -r story-mapper-
 | Pan / zoom the map | Drag empty space / pinch |
 | Export JSON, Save PNG | Opens the Android share sheet: save to Files or Drive, email it, etc. |
 | Import | Opens the file picker |
+| New story | Asks for a name in a native dialog. Its text box starts empty (Capacitor's dialog doesn't show a default); leave it blank for "Untitled story". |
 
 ## Where stories are saved
 
@@ -36,6 +37,18 @@ npm run serve        # try the Android build of the frontend in a desktop browse
 ```
 
 `npm run apk` stages the web app into `www/`, syncs it into the Android project and runs Gradle. `android/local.properties` must point at your SDK (`sdk.dir=/home/<you>/Android/Sdk`); it's gitignored. To open the project in Android Studio instead, run `npm run sync && npx cap open android`.
+
+### Testing in the emulator
+
+```sh
+sdkmanager "emulator" "system-images;android-36;google_apis;x86_64"        # ~1.5 GB, once
+avdmanager create avd -n storymapper36 -k "system-images;android-36;google_apis;x86_64" -d pixel_8
+emulator -avd storymapper36 &                                              # add -no-window for headless
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb shell run-as io.storymapper.app ls files/stories                       # see the saved story files
+```
+
+Debug builds allow WebView debugging (Capacitor's default; release builds don't). With the app open, `chrome://inspect` in desktop Chrome or Chromium shows its page for DevTools.
 
 The debug APK is signed with the SDK's debug key, which is fine for installing on your own devices. Publishing to the Play Store needs a release build signed with your own key (`./gradlew bundleRelease` plus a keystore made with `keytool`).
 
