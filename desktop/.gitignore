@@ -1,0 +1,5 @@
+# Copied from the web app by scripts/stage.mjs
+/server/
+/public/
+/dist/
+node_modules/

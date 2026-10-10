@@ -1,0 +1,70 @@
+{
+  "name": "story-mapper-desktop",
+  "productName": "Story Mapper",
+  "desktopName": "io.storymapper.desktop.desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Story Mapper desktop app — plan and play-test choose-your-own-adventure stories",
+  "author": "rustytoaster",
+  "license": "ISC",
+  "type": "module",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "start": "npm run stage && electron .",
+    "dist": "npm run stage && electron-builder --linux AppImage --x64",
+    "test": "npm run stage && node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "cytoscape": "^3.34.3",
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.17.0",
+    "playwright-core": "1.64.0"
+  },
+  "build": {
+    "appId": "io.storymapper.desktop",
+    "productName": "Story Mapper",
+    "files": [
+      "main.js",
+      "preload.cjs",
+      "prompt/**",
+      "assets/**",
+      "server/**",
+      "public/**",
+      "package.json"
+    ],
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "linux": {
+      "executableName": "story-mapper",
+      "syncDesktopName": true,
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Office",
+      "artifactName": "story-mapper-${version}-${arch}.${ext}",
+      "desktop": {
+        "entry": {
+          "Comment": "Plan and play-test choose-your-own-adventure stories",
+          "Keywords": "story;cyoa;writing;map;"
+        }
+      }
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

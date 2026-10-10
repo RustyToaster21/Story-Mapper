@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Story Mapper</title>
+  <link rel="stylesheet" href="prompt.css">
+  <script src="prompt.js" defer></script>
+</head>
+<body>
+  <form id="form">
+    <label for="value" id="message"></label>
+    <input id="value" type="text" maxlength="200" autocomplete="off" spellcheck="false">
+    <div class="actions">
+      <button type="button" id="cancel">Cancel</button>
+      <button type="submit" class="primary">OK</button>
+    </div>
+  </form>
+</body>
+</html>

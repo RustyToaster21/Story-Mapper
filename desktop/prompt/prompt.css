@@ -1,0 +1,65 @@
+/* Matches the palette in public/css/app.css. */
+:root {
+  color-scheme: light;
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --border: #dcd9d0;
+  --accent: #3b5bdb;
+  --accent-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #15171b;
+    --surface: #1e2127;
+    --text: #e6e8eb;
+    --border: #333841;
+    --accent: #7b96ff;
+    --accent-text: #0d1020;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 18px 20px;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+
+form { display: flex; flex-direction: column; gap: 10px; }
+
+input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+button {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
