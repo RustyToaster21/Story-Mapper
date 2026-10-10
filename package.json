@@ -1,16 +1,17 @@
 {
   "name": "story-mapper",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Local story-mapping tracker for choose-your-own-adventure games",
   "dependencies": {
     "cytoscape": "^3.34.3",
     "express": "^5.3.0"
-  }
+  },
+  "type": "module"
 }
