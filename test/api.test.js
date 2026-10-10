@@ -5,12 +5,13 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createApp } from '../server/app.js';
 import { Store } from '../server/store.js';
+import { nodeFs } from '../server/node-fs.js';
 
 let server; let base; let dir;
 
 before(async () => {
   dir = await mkdtemp(path.join(tmpdir(), 'story-mapper-test-'));
-  const store = new Store(dir);
+  const store = new Store(dir, nodeFs);
   await store.init();
   server = createApp(store).listen(0, '127.0.0.1');
   await new Promise((r) => server.once('listening', r));

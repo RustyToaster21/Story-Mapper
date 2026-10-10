@@ -16,8 +16,8 @@ import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './server/app.js';
 import { Store } from './server/store.js';
-import { sampleStory } from './server/sample.js';
-import { normalizeStory } from './server/validate.js';
+import { nodeFs } from './server/node-fs.js';
+import { seedIfEmpty } from './server/service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SCHEME = 'app';
@@ -49,12 +49,9 @@ const isAppUrl = (url) => {
 
 async function startServer() {
   const dataDir = process.env.DATA_DIR || path.join(app.getPath('userData'), 'stories');
-  const store = new Store(dataDir);
+  const store = new Store(dataDir, nodeFs);
   await store.init();
-  if ((await store.list()).length === 0) {
-    const story = normalizeStory(sampleStory());
-    await store.update(story.id, () => story);
-  }
+  await seedIfEmpty(store);
 
   if (process.platform === 'win32') {
     // Windows has no socket files; Node uses a named pipe instead. The random

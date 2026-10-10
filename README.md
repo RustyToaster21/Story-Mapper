@@ -178,6 +178,21 @@ Double-clicking it opens a console window running the server plus your browser. 
 | `npm install` fails with network / proxy errors | You're probably behind a company proxy. Ask IT for the proxy address, then run `npm config set proxy http://host:port` and `npm config set https-proxy http://host:port`. |
 | Page loads but is blank | Hard-refresh with **Ctrl+F5**. Check the terminal window for errors. |
 
+## Android app
+
+An offline Android version lives in [`mobile/`](mobile/README.md). It's the same frontend, wrapped with Capacitor, with stories saved on the device. To build the APK on CachyOS / Arch you need JDK 21, the Android SDK (platform 36 + build-tools 36) and Node.js 22.12+. This one-liner installs or updates all of them. It uses sudo, pacman and paru, puts the SDK in `~/Android/Sdk`, and **accepts the Android SDK licenses on your behalf**:
+
+```bash
+bash -c 'S=; sudo pacman -S --needed jdk21-openjdk android-tools && sudo archlinux-java set java-21-openjdk && paru -S --needed android-sdk-cmdline-tools-latest && S=$(find /opt/android-sdk -path "*/bin/sdkmanager" -type f | head -1) && export ANDROID_HOME="$HOME/Android/Sdk" && mkdir -p "$ANDROID_HOME" && (yes | "$S" --sdk_root="$ANDROID_HOME" --licenses > /dev/null) && "$S" --sdk_root="$ANDROID_HOME" "cmdline-tools;latest" "platform-tools" "platforms;android-36" "build-tools;36.0.0" && cd /tmp && L=$(curl -fsS https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt | grep "linux-x64.tar.xz$") && N=${L##* } && curl -fLO "https://nodejs.org/dist/latest-v22.x/$N" && echo "$L" | sha256sum -c - && rm -rf "$HOME/.local/node.new" && mkdir "$HOME/.local/node.new" && tar -xJf "$N" -C "$HOME/.local/node.new" --strip-components=1 && rm -rf "$HOME/.local/node" && mv "$HOME/.local/node.new" "$HOME/.local/node" && rm -f "$N" && for f in "$HOME/.zshrc" "$HOME/.profile"; do grep -q ANDROID_HOME "$f" || printf "\nexport ANDROID_HOME=\"\$HOME/Android/Sdk\"\nexport PATH=\"\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools:\$PATH\"\n" >> "$f"; done && (grep -q ANDROID_HOME "$HOME/.config/fish/config.fish" || printf "\nset -gx ANDROID_HOME \$HOME/Android/Sdk\nset -gx PATH \$ANDROID_HOME/cmdline-tools/latest/bin \$ANDROID_HOME/platform-tools \$PATH\n" >> "$HOME/.config/fish/config.fish") && java -version && "$HOME/.local/node/bin/node" -v && echo "All Android build tools installed - open a new terminal."'
+```
+
+Then:
+
+```sh
+cd mobile && npm install && npm run apk
+# -> mobile/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
 ## Using it
 
 | Action | How |
@@ -193,9 +208,13 @@ On the map, the border color shows status (grey draft, amber review, green done)
 ## Layout
 
 ```
-server/        Express API, JSON file store, input validation, demo story
+server/        Express API, input validation, demo story, plus code shared with the apps:
+  store.js       JSON file store (filesystem passed in: node-fs.js, or Capacitor on Android)
+  service.js     Story operations: create, import, save + conflict check, play-test stats
 public/        Frontend (vanilla JS modules + Cytoscape.js served from node_modules)
   js/analysis.js   Story-structure analysis, shared with the tests
-test/          node:test suites (analysis + API)
+desktop/       Electron app: Linux AppImage, Windows zip
+mobile/        Capacitor Android app
+test/          node:test suites (analysis, store, API)
 docs/          Design notes
 ```

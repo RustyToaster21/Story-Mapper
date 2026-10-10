@@ -1,25 +1,33 @@
 // One JSON file per story, written atomically (temp file + rename).
-import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+//
+// The filesystem is passed in as an adapter so the same store runs on Node
+// (node-fs.js) and inside the Android app (Capacitor Filesystem). An adapter
+// provides: join(...parts), mkdir(dir), readdir(dir) -> names,
+// readFile(file) -> utf8 string, writeFile(file, string), rename(from, to),
+// rm(file). Missing files must reject with err.code === 'ENOENT'.
 import { ID_RE, normalizeStory } from './validate.js';
 
+const basename = (file) => file.split(/[\\/]/).pop();
+
 export class Store {
-  constructor(dir) {
+  constructor(dir, fs) {
+    if (!fs) throw new Error('Store needs a filesystem adapter');
     this.dir = dir;
+    this.fs = fs;
     this.queues = new Map(); // per-story write serialisation
   }
 
   async init() {
-    await mkdir(this.dir, { recursive: true });
+    await this.fs.mkdir(this.dir);
   }
 
   file(id) {
     if (!ID_RE.test(id)) return null; // never let an id reach the filesystem unchecked
-    return path.join(this.dir, `${id}.json`);
+    return this.fs.join(this.dir, `${id}.json`);
   }
 
   async list() {
-    const names = (await readdir(this.dir)).filter((n) => n.endsWith('.json'));
+    const names = (await this.fs.readdir(this.dir)).filter((n) => n.endsWith('.json'));
     const out = [];
     for (const name of names) {
       const story = await this.get(name.slice(0, -5));
@@ -38,11 +46,11 @@ export class Store {
     if (!file) return null;
     try {
       // Files on disk can be hand-edited or synced in; re-normalise on read.
-      return { ...normalizeStory(JSON.parse(await readFile(file, 'utf8'))), id };
+      return { ...normalizeStory(JSON.parse(await this.fs.readFile(file))), id };
     } catch (err) {
       if (err.code === 'ENOENT') return null;
       if (err instanceof SyntaxError || err.status === 400) {
-        console.warn(`skipping unreadable story file ${path.basename(file)}`);
+        console.warn(`skipping unreadable story file ${basename(file)}`);
         return null;
       }
       throw err;
@@ -66,16 +74,16 @@ export class Store {
   async #write(story) {
     const file = this.file(story.id);
     if (!file) throw new Error('invalid story id');
-    const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
-    await writeFile(tmp, JSON.stringify(story, null, 2));
-    await rename(tmp, file);
+    const tmp = `${file}.${Date.now()}.${Math.random().toString(36).slice(2, 10)}.tmp`;
+    await this.fs.writeFile(tmp, JSON.stringify(story, null, 2));
+    await this.fs.rename(tmp, file);
   }
 
   async remove(id) {
     const file = this.file(id);
     if (!file) return false;
     try {
-      await rm(file);
+      await this.fs.rm(file);
       return true;
     } catch (err) {
       if (err.code === 'ENOENT') return false;

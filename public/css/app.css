@@ -56,6 +56,10 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
+  /* Edge-to-edge Android: keep content clear of the status and navigation
+     bars. Capacitor's SystemBars sets --safe-area-inset-*; elsewhere these are 0. */
+  padding: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) var(--safe-area-inset-right, env(safe-area-inset-right, 0px))
+    var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
   background: var(--bg);
   color: var(--text);
   font: 14px/1.45 var(--font-ui);

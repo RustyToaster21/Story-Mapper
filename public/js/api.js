@@ -17,7 +17,7 @@ async function request(method, url, body, opts = {}) {
 
 const enc = encodeURIComponent;
 
-export const api = {
+const httpApi = {
   list: () => request('GET', '/api/stories'),
   get: (id) => request('GET', `/api/stories/${enc(id)}`),
   create: (title) => request('POST', '/api/stories', { title }),
@@ -27,3 +27,9 @@ export const api = {
   playthrough: (id, path) => request('POST', `/api/stories/${enc(id)}/playthrough`, { path }),
   resetStats: (id) => request('DELETE', `/api/stories/${enc(id)}/stats`),
 };
+
+// A platform shell (the Android app) can supply its own storage by defining
+// globalThis.storyMapperPlatform.createApi before this module loads. It gets
+// ApiError so errors (e.g. 409 conflicts) look the same as over HTTP.
+const platform = globalThis.storyMapperPlatform;
+export const api = typeof platform?.createApi === 'function' ? platform.createApi(ApiError) : httpApi;

@@ -1,0 +1,14 @@
+{
+  "appId": "io.storymapper.app",
+  "appName": "Story Mapper",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "story-mapper-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Story Mapper Android app — plan and play-test choose-your-own-adventure stories",
+  "author": "rustytoaster",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "sync": "npm run stage && cap sync android",
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "serve": "npm run stage && node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/share": "8.0.3",
+    "cytoscape": "^3.34.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.28.2"
+  }
+}

@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { newId, normalizePath, normalizeStory } from './validate.js';
+import { createStory, importStory, recordPlaythrough, resetStats, saveStory } from './service.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -47,27 +47,11 @@ export function createApp(store) {
   api.get('/stories', async (req, res) => res.json(await store.list()));
 
   api.post('/stories', async (req, res) => {
-    const startId = newId();
-    const now = new Date().toISOString();
-    const story = normalizeStory({
-      id: newId(),
-      title: req.body?.title,
-      description: req.body?.description,
-      startSceneId: startId,
-      scenes: [{ id: startId, title: 'Opening scene', position: { x: 0, y: 0 } }],
-      createdAt: now,
-      updatedAt: now,
-    });
-    await store.update(story.id, () => story);
-    res.status(201).json(story);
+    res.status(201).json(await createStory(store, { title: req.body?.title, description: req.body?.description }));
   });
 
   api.post('/stories/import', async (req, res) => {
-    const now = new Date().toISOString();
-    // Imported files get a fresh story id so they never overwrite an existing story.
-    const story = normalizeStory({ ...req.body, id: newId(), createdAt: now, updatedAt: now });
-    await store.update(story.id, () => story);
-    res.status(201).json(story);
+    res.status(201).json(await importStory(store, req.body));
   });
 
   api.get('/stories/:id', async (req, res) => {
@@ -77,23 +61,10 @@ export function createApp(store) {
   });
 
   api.put('/stories/:id', async (req, res) => {
-    const base = req.body?.baseUpdatedAt;
-    let conflict = null;
-    const saved = await store.update(req.params.id, (current) => {
-      if (!current) return null;
-      if (base && base !== current.updatedAt) { conflict = current; return null; }
-      const next = normalizeStory({
-        ...req.body,
-        id: current.id,
-        createdAt: current.createdAt,
-        updatedAt: new Date().toISOString(),
-      });
-      next.stats = normalizeStory({ ...next, stats: current.stats }).stats; // stats are server-owned
-      return next;
-    });
-    if (conflict) return res.status(409).json({ error: 'Story was changed elsewhere', story: conflict });
-    if (!saved) return res.status(404).json({ error: 'Story not found' });
-    res.json(saved);
+    const result = await saveStory(store, req.params.id, req.body);
+    if (result?.conflict) return res.status(409).json({ error: 'Story was changed elsewhere', story: result.conflict });
+    if (!result) return res.status(404).json({ error: 'Story not found' });
+    res.json(result.story);
   });
 
   api.delete('/stories/:id', async (req, res) => {
@@ -102,32 +73,15 @@ export function createApp(store) {
   });
 
   api.post('/stories/:id/playthrough', async (req, res) => {
-    let invalid = null;
-    const saved = await store.update(req.params.id, (story) => {
-      if (!story) return null;
-      const byId = new Map(story.scenes.map((s) => [s.id, s]));
-      let visited;
-      try { visited = normalizePath(req.body?.path, new Set(byId.keys())); } catch (err) { invalid = err; return null; }
-      const { stats } = story;
-      stats.playthroughs++;
-      for (const sid of new Set(visited)) stats.visits[sid] = (stats.visits[sid] || 0) + 1;
-      const last = visited.at(-1);
-      if (last && byId.get(last).ending) stats.endingsReached[last] = (stats.endingsReached[last] || 0) + 1;
-      return story; // updatedAt untouched: stats don't conflict with edits
-    });
-    if (invalid) throw invalid;
-    if (!saved) return res.status(404).json({ error: 'Story not found' });
-    res.json(saved.stats);
+    const stats = await recordPlaythrough(store, req.params.id, req.body?.path);
+    if (!stats) return res.status(404).json({ error: 'Story not found' });
+    res.json(stats);
   });
 
   api.delete('/stories/:id/stats', async (req, res) => {
-    const saved = await store.update(req.params.id, (story) => {
-      if (!story) return null;
-      story.stats = { playthroughs: 0, visits: {}, endingsReached: {} };
-      return story;
-    });
-    if (!saved) return res.status(404).json({ error: 'Story not found' });
-    res.json(saved.stats);
+    const stats = await resetStats(store, req.params.id);
+    if (!stats) return res.status(404).json({ error: 'Story not found' });
+    res.json(stats);
   });
 
   app.use('/api', api);

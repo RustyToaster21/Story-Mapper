@@ -31,7 +31,10 @@ export function toast(message, kind = 'info') {
   toastTimer = setTimeout(() => { el.hidden = true; }, kind === 'error' ? 6000 : 3000);
 }
 
-export function download(filename, blob) {
+// Platform shells without browser downloads (the Android app) provide saveFile.
+export async function download(filename, blob) {
+  const saveFile = globalThis.storyMapperPlatform?.saveFile;
+  if (typeof saveFile === 'function') return saveFile(filename, blob);
   const url = URL.createObjectURL(blob);
   const a = h('a', { href: url, download: filename });
   document.body.append(a);

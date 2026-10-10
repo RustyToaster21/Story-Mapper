@@ -1,7 +1,7 @@
 // Normalises any incoming story document (API writes and file imports alike).
 // Everything here is untrusted: clamp sizes, coerce types, drop unknown fields.
-import { randomUUID } from 'node:crypto';
-
+// Uses the global Web Crypto API (Node 19+, browsers, Android WebView) so
+// this module also runs in the Android app.
 export const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const FLAG_RE = /^!?[A-Za-z0-9_.-]{1,64}$/;
 const STATUSES = new Set(['draft', 'review', 'done']);
@@ -16,7 +16,7 @@ export class ValidationError extends Error {
   constructor(message) { super(message); this.status = 400; this.expose = true; }
 }
 
-export const newId = () => randomUUID().replaceAll('-', '').slice(0, 16);
+export const newId = () => globalThis.crypto.randomUUID().replaceAll('-', '').slice(0, 16);
 
 const str = (v, max) => (typeof v === 'string' ? v : '').slice(0, max);
 const id = (v) => (typeof v === 'string' && ID_RE.test(v) ? v : newId());

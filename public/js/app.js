@@ -317,11 +317,11 @@ class App {
     await this.flush();
     const { stats, ...rest } = this.story;
     const blob = new Blob([JSON.stringify({ format: 'story-mapper/1', ...rest, stats }, null, 2)], { type: 'application/json' });
-    download(`${slug(this.story.title)}.json`, blob);
+    try { await download(`${slug(this.story.title)}.json`, blob); } catch (err) { toast(`Export failed: ${err.message}`, 'error'); }
   }
 
   async exportPng() {
-    download(`${slug(this.story.title)}-map.png`, await this.map.png());
+    try { await download(`${slug(this.story.title)}-map.png`, await this.map.png()); } catch (err) { toast(`Export failed: ${err.message}`, 'error'); }
   }
 
   async importFile(file) {
@@ -370,6 +370,12 @@ class App {
       else if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedId) { e.preventDefault(); this.deleteScene(this.selectedId); }
       else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
       else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); this.play(); }
+    });
+
+    // Save as soon as the page is hidden: switching tabs or apps, or Android
+    // sending the app to the background (which may be killed without pagehide).
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.flush().catch(() => {});
     });
 
     // Best-effort save when the tab closes.
