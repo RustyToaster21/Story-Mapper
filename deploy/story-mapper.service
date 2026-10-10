@@ -1,0 +1,13 @@
+[Unit]
+Description=Story Mapper (local CYOA story-mapping tracker)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Projects/story-mapper
+ExecStart=%h/.local/node/bin/node server/index.js
+Environment=PORT=4777
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
