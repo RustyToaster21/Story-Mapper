@@ -1,11 +1,13 @@
 // Story Mapper desktop shell.
 //
 // The web app's Express server (server/, copied in by scripts/stage.mjs) runs
-// in-process on a private Unix socket — no TCP port is opened. The window loads
+// in-process on a private Unix socket (a named pipe on Windows) — no TCP port
+// is opened. The window loads
 // app://story-mapper/, and every request on that scheme is proxied to the
 // socket, so the page keeps a stable origin (localStorage survives restarts)
 // and the server code runs unchanged.
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, protocol } from 'electron';
+import { randomBytes } from 'node:crypto';
 import http from 'node:http';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -54,15 +56,22 @@ async function startServer() {
     await store.update(story.id, () => story);
   }
 
-  // mkdtemp creates the directory with mode 0700, so only this user can reach the socket.
-  const runtime = process.env.XDG_RUNTIME_DIR;
-  try {
-    if (!runtime || !path.isAbsolute(runtime)) throw new Error('no runtime dir');
-    socketDir = await mkdtemp(path.join(runtime, 'story-mapper-'));
-  } catch {
-    socketDir = await mkdtemp(path.join(os.tmpdir(), 'story-mapper-'));
+  if (process.platform === 'win32') {
+    // Windows has no socket files; Node uses a named pipe instead. The random
+    // name keeps it unguessable, and by default only this user may write to it.
+    // Windows removes the pipe when the process exits.
+    socketPath = `\\\\?\\pipe\\story-mapper-${randomBytes(16).toString('hex')}`;
+  } else {
+    // mkdtemp creates the directory with mode 0700, so only this user can reach the socket.
+    const runtime = process.env.XDG_RUNTIME_DIR;
+    try {
+      if (!runtime || !path.isAbsolute(runtime)) throw new Error('no runtime dir');
+      socketDir = await mkdtemp(path.join(runtime, 'story-mapper-'));
+    } catch {
+      socketDir = await mkdtemp(path.join(os.tmpdir(), 'story-mapper-'));
+    }
+    socketPath = path.join(socketDir, 'api.sock');
   }
-  socketPath = path.join(socketDir, 'api.sock');
 
   server = http.createServer(createApp(store));
   await new Promise((resolve, reject) => {

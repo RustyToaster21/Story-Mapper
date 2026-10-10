@@ -43,6 +43,8 @@ systemctl --user enable --now story-mapper
 
 ## Windows 11 setup
 
+> **Just want to use it?** The desktop build needs no setup at all: extract `story-mapper-1.0.0-win-x64.zip` and double-click `Story Mapper.exe`. No Node.js and no browser are needed. See [desktop/README.md](desktop/README.md); build the zip on Linux with `cd desktop && npm install && npm run dist:win`. The steps below are for running the web version from source.
+
 This assumes a fresh Windows 11 PC with nothing installed. The only thing Story Mapper needs is **Node.js 22 or newer** (npm is included); everything else is installed by `npm install`. You don't need Git, Python, or Visual Studio build tools.
 
 All commands below are typed into **Windows Terminal / PowerShell**. Open it with **Start → type `Terminal` → Enter**.

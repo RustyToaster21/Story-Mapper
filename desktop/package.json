@@ -16,7 +16,8 @@
     "stage": "node scripts/stage.mjs",
     "start": "npm run stage && electron .",
     "dist": "npm run stage && electron-builder --linux AppImage --x64",
-    "test": "npm run stage && node --test \"test/*.test.js\""
+    "test": "npm run stage && node --test \"test/*.test.js\"",
+    "dist:win": "npm run stage && electron-builder --win zip --x64"
   },
   "dependencies": {
     "cytoscape": "^3.34.3",
@@ -62,6 +63,18 @@
           "Keywords": "story;cyoa;writing;map;"
         }
       }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "story-mapper-${version}-win-${arch}.${ext}"
     },
     "directories": {
       "output": "dist"
