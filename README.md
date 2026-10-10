@@ -12,6 +12,19 @@ A local web app for planning, tracking and play-testing **choose-your-own-advent
 
 Runs entirely on this machine: Node + Express, stories stored as JSON files, no CDN or network calls.
 
+## Download
+
+Ready-to-run builds are attached to the [latest release](https://github.com/RustyToaster21/Story-Mapper/releases/latest):
+
+| Platform | File | How to run |
+|---|---|---|
+| Windows 10/11 (x64) | `story-mapper-1.0.0-win-x64.zip` | Extract, double-click `Story Mapper.exe`. See [desktop/README.md](desktop/README.md). |
+| Linux (x86_64) | `story-mapper-1.0.0-x86_64.AppImage` | `chmod +x` it and run. See [desktop/README.md](desktop/README.md). |
+| Android 7.0+ | `story-mapper-1.0.0-android.apk` | Open it on the device and allow the install. See [mobile/README.md](mobile/README.md). |
+| Web app (any OS) | this repository | `npm install && npm start`, then open <http://localhost:4777> (below). |
+
+`SHA256SUMS.txt` in the release lists each file's checksum. The builds are unsigned, so Windows SmartScreen and Android Play Protect will warn on first install.
+
 ## Run it (Linux / macOS)
 
 Requires Node.js 22 or newer. On Windows, see [Windows 11 setup](#windows-11-setup) below.
