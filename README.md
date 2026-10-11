@@ -19,11 +19,13 @@ Ready-to-run builds are attached to the [latest release](https://github.com/Rust
 | Platform | File | How to run |
 |---|---|---|
 | Windows 10/11 (x64) | `story-mapper-1.0.0-win-x64.zip` | Extract, double-click `Story Mapper.exe`. See [desktop/README.md](desktop/README.md). |
+| macOS 13+ (Apple silicon) | `story-mapper-1.0.0-mac-arm64.zip` | Extract, drag to Applications, then allow it once in System Settings → Privacy & Security. See [desktop/README.md](desktop/README.md#macos-13-ventura-or-newer). |
+| macOS 13+ (Intel) | `story-mapper-1.0.0-mac-x64.zip` | Same as above. |
 | Linux (x86_64) | `story-mapper-1.0.0-x86_64.AppImage` | `chmod +x` it and run. See [desktop/README.md](desktop/README.md). |
 | Android 7.0+ | `story-mapper-1.0.0-android.apk` | Open it on the device and allow the install. See [mobile/README.md](mobile/README.md). |
 | Web app (any OS) | this repository | `npm install && npm start`, then open <http://localhost:4777> (below). |
 
-`SHA256SUMS.txt` in the release lists each file's checksum. The builds are unsigned, so Windows SmartScreen and Android Play Protect will warn on first install.
+`SHA256SUMS.txt` in the release lists each file's checksum. The builds aren't signed with a developer certificate, so Windows SmartScreen, macOS Gatekeeper and Android Play Protect will warn on first install.
 
 ## Run it (Linux / macOS)
 
