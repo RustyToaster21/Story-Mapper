@@ -178,8 +178,11 @@ ipcMain.on('story-mapper:prompt', async (event, message, value) => {
 });
 
 function buildMenu() {
+  const isMac = process.platform === 'darwin';
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'File', submenu: [{ role: 'quit' }] },
+    // macOS puts About / Hide / Quit in a menu named after the app.
+    ...(isMac ? [{ role: 'appMenu' }] : []),
+    { label: 'File', submenu: [isMac ? { role: 'close' } : { role: 'quit' }] },
     { role: 'editMenu' },
     {
       label: 'View',

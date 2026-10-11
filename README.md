@@ -226,7 +226,7 @@ server/        Express API, input validation, demo story, plus code shared with 
   service.js     Story operations: create, import, save + conflict check, play-test stats
 public/        Frontend (vanilla JS modules + Cytoscape.js served from node_modules)
   js/analysis.js   Story-structure analysis, shared with the tests
-desktop/       Electron app: Linux AppImage, Windows zip
+desktop/       Electron app: Windows zip, macOS zips (Apple silicon + Intel), Linux AppImage
 mobile/        Capacitor Android app
 test/          node:test suites (analysis, store, API)
 docs/          Design notes
