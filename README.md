@@ -29,7 +29,7 @@ Ready-to-run builds are attached to the [latest release](https://github.com/Rust
 
 ## Run it (Linux / macOS)
 
-Requires Node.js 22 or newer. On Windows, see [Windows 11 setup](#windows-11-setup) below.
+Requires Node.js 22 or newer. Starting from a fresh machine? See [macOS setup](#macos-setup) or [Windows 11 setup](#windows-11-setup) below.
 
 ```sh
 cd ~/Projects/story-mapper
@@ -55,6 +55,130 @@ cp deploy/story-mapper.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now story-mapper
 ```
+
+## macOS setup
+
+> **Just want to use it?** The macOS desktop app needs no setup at all: download the zip for your Mac from the [latest release](https://github.com/RustyToaster21/Story-Mapper/releases/latest) and see [desktop/README.md](desktop/README.md#macos-13-ventura-or-newer). The steps below are for running the web version from source.
+
+This assumes a Mac running macOS 13 Ventura or newer, either Apple silicon or Intel, with nothing installed. The only thing Story Mapper needs is **Node.js 22 or newer** (npm is included); everything else is installed by `npm install`. You don't need Xcode, Git or Homebrew.
+
+All commands below are typed into **Terminal**. Open it with **⌘ Space → type `Terminal` → Return**.
+
+### 1. Install Node.js
+
+**Official installer (simplest):** go to <https://nodejs.org>, download the **LTS** "macOS Installer (.pkg)" and run it with the default options. One installer works on both Apple silicon and Intel Macs.
+
+**Or, if you already use [Homebrew](https://brew.sh):**
+
+```sh
+brew install node
+```
+
+Then **open a new Terminal window** and check:
+
+```sh
+node -v    # should print v22.x or newer
+npm -v
+```
+
+### 2. Get the project
+
+Download it from GitHub and unpack it into your home folder:
+
+```sh
+cd ~
+curl -L -o story-mapper.zip https://github.com/RustyToaster21/Story-Mapper/archive/refs/heads/master.zip
+unzip -q story-mapper.zip && rm story-mapper.zip
+mv Story-Mapper-master story-mapper
+cd story-mapper
+```
+
+<details>
+<summary>Using Git instead</summary>
+
+```sh
+git clone https://github.com/RustyToaster21/Story-Mapper.git ~/story-mapper
+cd ~/story-mapper
+```
+
+The first time you run `git`, macOS offers to install the **Command Line Developer Tools**. Click **Install**; it takes a few minutes. That's the only extra this route needs.
+</details>
+
+### 3. Install dependencies and start
+
+```sh
+npm install
+npm start
+```
+
+You should see:
+
+```
+Story Mapper running at http://localhost:4777
+Stories are saved in /Users/<you>/story-mapper/data/stories
+```
+
+Open **<http://localhost:4777>** in Safari, Chrome or Firefox, or type `open http://localhost:4777` in a second Terminal window. Leave the first Terminal window open while you work. **Ctrl+C** in it stops the server.
+
+Optionally, run `npm test` to check everything works on your Mac. It should report `pass 18` and `fail 0`.
+
+### Settings on macOS
+
+The settings table above works as-is in Terminal:
+
+```sh
+PORT=8080 npm start                                     # use another port
+DATA_DIR="$HOME/Documents/Story Mapper" npm start       # keep stories elsewhere, e.g. a folder you back up
+```
+
+The server listens on `127.0.0.1` only, so macOS normally doesn't ask about incoming connections. If it ever does, choose **Deny**. Nothing outside your Mac needs access.
+
+### Start it automatically at login (optional)
+
+This registers Story Mapper as a background service for your user account, using macOS's own `launchd`:
+
+```sh
+mkdir -p ~/Library/LaunchAgents ~/Library/Logs
+cat > ~/Library/LaunchAgents/io.storymapper.web.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>io.storymapper.web</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$(command -v node)</string>
+    <string>$HOME/story-mapper/server/index.js</string>
+  </array>
+  <key>WorkingDirectory</key><string>$HOME/story-mapper</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>StandardOutPath</key><string>$HOME/Library/Logs/story-mapper.log</string>
+  <key>StandardErrorPath</key><string>$HOME/Library/Logs/story-mapper.log</string>
+</dict>
+</plist>
+EOF
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.storymapper.web.plist
+```
+
+It starts now and at every login; macOS may show a "Background Items Added" notification. Then just open <http://localhost:4777>. The log is in `~/Library/Logs/story-mapper.log`. To stop it and remove the service:
+
+```sh
+launchctl bootout gui/$(id -u)/io.storymapper.web && rm ~/Library/LaunchAgents/io.storymapper.web.plist
+```
+
+If you move the project folder or reinstall Node.js, remove the service and set it up again, since it records both paths.
+
+### macOS troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `zsh: command not found: node` | Open a **new** Terminal window after installing Node. With Homebrew on Apple silicon, also run the `eval "$(/opt/homebrew/bin/brew shellenv)"` line Homebrew printed at the end of its install, and add it to `~/.zprofile`. |
+| A "Command Line Developer Tools" pop-up appears | You ran `git`. Click **Install**, or use the `curl` download in step 2, which doesn't need it. |
+| `Could not start server: listen EADDRINUSE` | Something already uses port 4777, often an earlier Story Mapper window or the login service above. Close it, or start with `PORT=4778 npm start`. |
+| `node -v` prints v20 or older | Install the current LTS from <https://nodejs.org>, or run `brew upgrade node`. |
+| `npm install` fails with `EACCES` | Don't use `sudo`. Make sure the project is in your home folder (step 2), not somewhere like `/Applications`. |
+| Page loads but is blank | Hard-refresh with **⌘ Shift R**. Check the Terminal window for errors. |
 
 ## Windows 11 setup
 
