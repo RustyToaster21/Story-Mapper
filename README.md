@@ -10,8 +10,6 @@ A local web app for planning, tracking and play-testing **choose-your-own-advent
 - **Play-test** — run the story like a player, with flags and a Back button. The path is highlighted on the map. Runs from the start scene are recorded, giving you scene/ending coverage and an optional visit heatmap.
 - **Import / export** stories as JSON, and save the map as a PNG.
 
-Runs entirely on this machine: Node + Express, stories stored as JSON files, no CDN or network calls.
-
 ## Download
 
 Ready-to-run builds are attached to the [latest release](https://github.com/RustyToaster21/Story-Mapper/releases/latest):
@@ -233,31 +231,30 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 Answer `Y` if asked. To skip this step entirely, use **Command Prompt** (`cmd`) in place of PowerShell, or type `npm.cmd` wherever this guide says `npm`.
 
-### 3. Get the project onto the PC
+### 3. Get the project
 
-The project isn't published online, so copy it over from the machine that has it. On that Linux machine, make a zip of the latest committed code (this leaves out `node_modules/` and your local `data/`):
-
-```sh
-cd ~/Projects/story-mapper
-git archive --format=zip -o ~/story-mapper.zip HEAD
-```
-
-Copy `story-mapper.zip` to the Windows PC (USB stick, network share, cloud drive…). Then, in PowerShell:
+Download it from GitHub and unpack it into your user folder:
 
 ```powershell
-Expand-Archive "$HOME\Downloads\story-mapper.zip" -DestinationPath "$HOME\story-mapper"
-cd "$HOME\story-mapper"
+cd $HOME
+Invoke-WebRequest https://github.com/RustyToaster21/Story-Mapper/archive/refs/heads/master.zip -OutFile story-mapper.zip
+Expand-Archive story-mapper.zip -DestinationPath .
+Remove-Item story-mapper.zip
+Rename-Item Story-Mapper-master story-mapper
+cd story-mapper
 ```
 
-Adjust the first path if the zip is somewhere other than Downloads. To bring your existing stories along too, copy the `data\stories\` folder from the old machine into `$HOME\story-mapper\data\stories\`.
+Prefer the browser? On the [GitHub page](https://github.com/RustyToaster21/Story-Mapper), click **Code → Download ZIP**, right-click the zip → **Extract All…** into your user folder, and rename the extracted `Story-Mapper-master` folder to `story-mapper`.
+
+To bring stories from another computer, copy its `data\stories\` folder into `$HOME\story-mapper\data\stories\`.
 
 <details>
-<summary>Using Git instead (if you've pushed the repo somewhere)</summary>
+<summary>Using Git instead</summary>
 
 ```powershell
 winget install --id Git.Git -e --source winget
 # open a new terminal, then:
-git clone <your-repo-url> "$HOME\story-mapper"
+git clone https://github.com/RustyToaster21/Story-Mapper.git "$HOME\story-mapper"
 cd "$HOME\story-mapper"
 ```
 </details>
