@@ -419,6 +419,10 @@ cd ~/story-mapper/mobile && npm install && npm run apk
 # -> mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## iOS app
+
+The same Capacitor app also targets iPhone and iPad (iOS 15+), from [`mobile/ios`](mobile/README.md#ios-iphone-and-ipad). iOS apps can only be built with Xcode on macOS, so a GitHub Actions workflow ([`.github/workflows/ios.yml`](.github/workflows/ios.yml)) builds it on a GitHub-hosted Mac; you don't need a Mac yourself. Every run tests the app on a simulated iPhone and uploads an unsigned build. With an Apple Developer Program membership, it can also produce signed Ad Hoc builds or upload to TestFlight. Setup steps are in [mobile/README.md](mobile/README.md#ios-iphone-and-ipad).
+
 ## Using it
 
 | Action | How |
@@ -440,7 +444,7 @@ server/        Express API, input validation, demo story, plus code shared with 
 public/        Frontend (vanilla JS modules + Cytoscape.js served from node_modules)
   js/analysis.js   Story-structure analysis, shared with the tests
 desktop/       Electron app: Windows zip, macOS zips (Apple silicon + Intel), Linux AppImage
-mobile/        Capacitor Android app
+mobile/        Capacitor Android and iOS apps (iOS built by .github/workflows/ios.yml)
 test/          node:test suites (analysis, store, API)
 docs/          Design notes
 ```

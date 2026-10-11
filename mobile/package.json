@@ -12,6 +12,7 @@
   "scripts": {
     "stage": "node scripts/stage.mjs",
     "sync": "npm run stage && cap sync android",
+    "sync:ios": "npm run stage && cap sync ios",
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "serve": "npm run stage && node scripts/serve.mjs"
   },
@@ -19,6 +20,7 @@
     "@capacitor/android": "8.5.3",
     "@capacitor/core": "8.5.3",
     "@capacitor/filesystem": "8.1.4",
+    "@capacitor/ios": "8.5.3",
     "@capacitor/share": "8.0.3",
     "cytoscape": "^3.34.3"
   },

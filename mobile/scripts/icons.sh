@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates the Android launcher icons and splash screens from the
+# Regenerates the Android and iOS app icons and splash screens from the
 # Story Mapper favicon design. Needs ImageMagick (magick) and rsvg-convert.
 # Run from mobile/: bash scripts/icons.sh
 set -euo pipefail
@@ -40,4 +40,19 @@ find "$RES" -name splash.png | while read -r f; do
   s=$(( (w < h ? w : h) / 4 ))
   magick -size "${w}x${h}" "xc:$BG" \( "$TMP/icon512.png" -resize "${s}x${s}" \) -gravity center -composite "$f"
 done
+
+# iOS: one 1024 px app icon (full-bleed square; iOS rounds the corners itself, and
+# App Store Connect rejects icons with an alpha channel) plus the launch-screen images.
+IOS=ios/App/App/Assets.xcassets
+if [ -d "$IOS" ]; then
+  echo "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' fill='$BLUE'/>$GLYPH</svg>" > "$TMP/ios-icon.svg"
+  rsvg-convert -w 1024 -h 1024 "$TMP/ios-icon.svg" -o "$TMP/ios-icon.png"
+  magick "$TMP/ios-icon.png" -background "$BLUE" -alpha remove -alpha off "PNG24:$IOS/AppIcon.appiconset/AppIcon-512@2x.png"
+  for f in "$IOS"/Splash.imageset/splash-*.png; do
+    size=$(magick identify -format '%wx%h' "$f")
+    w=${size%x*}; h=${size#*x}
+    s=$(( (w < h ? w : h) / 4 ))
+    magick -size "${w}x${h}" "xc:$BG" \( "$TMP/icon512.png" -resize "${s}x${s}" \) -gravity center -composite -alpha off "$f"
+  done
+fi
 echo "Icons and splash screens regenerated."

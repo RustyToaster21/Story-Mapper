@@ -1,0 +1,250 @@
+# Builds the Story Mapper iOS app (Capacitor, mobile/ios) on a GitHub-hosted Mac.
+#
+# Job "build" always runs and needs no Apple account:
+#   - builds for the iOS Simulator, installs it on a simulated iPhone, launches it,
+#     checks the app wrote its demo story to disk, and takes a screenshot
+#   - builds an unsigned device .ipa (for re-signing tools such as Sideloadly / AltStore)
+# Job "signed" runs only on manual runs (Actions → iOS → Run workflow) and only
+# when the App Store Connect secrets below are set. It signs automatically through the API key (no
+# certificate or profile files to manage) and exports an Ad Hoc or App Store
+# .ipa, optionally uploading it to TestFlight. Setup: mobile/README.md.
+#
+# Secrets for the signed job:
+#   APPLE_TEAM_ID      10-character Team ID (developer.apple.com → Membership)
+#   ASC_KEY_ID         App Store Connect API key ID
+#   ASC_ISSUER_ID      App Store Connect API issuer ID
+#   ASC_KEY_P8_BASE64  the key's AuthKey_XXXX.p8 file, base64-encoded
+name: iOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      export_method:
+        description: Signed build type (needs the Apple secrets)
+        type: choice
+        options:
+          - release-testing
+          - app-store-connect
+        default: release-testing
+      upload_to_testflight:
+        description: Upload app-store-connect builds to TestFlight
+        type: boolean
+        default: false
+  push:
+    branches: [master]
+    paths:
+      - public/**
+      - server/**
+      - mobile/**
+      - .github/workflows/ios.yml
+  pull_request:
+    paths:
+      - public/**
+      - server/**
+      - mobile/**
+      - .github/workflows/ios.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODE_PROJECT: mobile/ios/App/App.xcodeproj
+  BUNDLE_ID: io.storymapper.app
+
+jobs:
+  build:
+    name: Simulator test + unsigned build
+    runs-on: macos-26
+    timeout-minutes: 45
+    outputs:
+      signing: ${{ steps.signing.outputs.available }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Check Xcode
+        run: |
+          xcodebuild -version
+          major=$(xcodebuild -version | awk 'NR==1 { split($2, v, "."); print v[1] }')
+          if [ "$major" -lt 26 ]; then
+            echo "::error::Capacitor 8 needs Xcode 26 or newer; this runner has Xcode $major"
+            exit 1
+          fi
+
+      - name: Stage the web app into the iOS project
+        working-directory: mobile
+        run: |
+          npm ci
+          npm run sync:ios
+
+      - name: Build for the iOS Simulator
+        run: |
+          xcodebuild build \
+            -project "$XCODE_PROJECT" -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/sim" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Smoke-test on a simulated iPhone
+        run: |
+          app="$RUNNER_TEMP/sim/Build/Products/Debug-iphonesimulator/App.app"
+          out="$RUNNER_TEMP/out"
+          mkdir -p "$out"
+          udid=$(xcrun simctl list devices available --json \
+            | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          if [ -z "$udid" ] || [ "$udid" = null ]; then
+            echo "::error::No iPhone simulator is available on this runner"
+            exit 1
+          fi
+          echo "Using simulator: $(xcrun simctl list devices | grep "$udid")"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl install "$udid" "$app"
+          xcrun simctl launch "$udid" "$BUNDLE_ID"
+
+          # On first launch the app seeds its demo story through the Filesystem
+          # plugin into Documents/stories, so the file proves the web app booted
+          # and native storage works.
+          data=$(xcrun simctl get_app_container "$udid" "$BUNDLE_ID" data)
+          story="$data/Documents/stories/sample-lighthouse.json"
+          for _ in $(seq 1 60); do
+            [ -f "$story" ] && break
+            sleep 2
+          done
+          sleep 5
+          xcrun simctl io "$udid" screenshot "$out/simulator-screenshot.png"
+          if [ ! -f "$story" ]; then
+            echo "::error::The app did not write its demo story to $story"
+            find "$data" -maxdepth 4 -print
+            exit 1
+          fi
+          echo "Demo story saved on the simulated device: $(wc -c < "$story") bytes"
+          ditto -c -k --keepParent "$app" "$out/story-mapper-ios-simulator.zip"
+
+      - name: Build unsigned device app (.ipa)
+        run: |
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/unsigned.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$RUNNER_TEMP/unsigned.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$RUNNER_TEMP/out/story-mapper-ios-unsigned.ipa" Payload)
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: story-mapper-ios
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: error
+
+      - name: Check for signing secrets
+        id: signing
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          if [ -n "$APPLE_TEAM_ID" ] && [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8_BASE64" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Apple signing secrets are not set, so the signed build is skipped. See mobile/README.md."
+          fi
+
+  signed:
+    name: Signed build
+    needs: build
+    if: needs.build.outputs.signing == 'true' && github.event_name == 'workflow_dispatch'
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      EXPORT_METHOD: ${{ inputs.export_method || 'release-testing' }}
+      UPLOAD_TO_TESTFLIGHT: ${{ inputs.upload_to_testflight || false }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Stage the web app into the iOS project
+        working-directory: mobile
+        run: |
+          npm ci
+          npm run sync:ios
+
+      - name: Install the App Store Connect API key
+        env:
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          echo -n "$ASC_KEY_P8_BASE64" | base64 --decode -o "$key"
+          chmod 600 "$key"
+          echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
+
+      - name: Archive (automatic signing)
+        run: |
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+
+      - name: Export .ipa
+        run: |
+          destination="export"
+          if [ "$EXPORT_METHOD" = app-store-connect ] && [ "$UPLOAD_TO_TESTFLIGHT" = true ]; then
+            destination="upload"
+          fi
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>$EXPORT_METHOD</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>$destination</string>
+          </dict>
+          </plist>
+          EOF
+          echo "Exporting with method=$EXPORT_METHOD destination=$destination"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportPath "$RUNNER_TEMP/signed" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: story-mapper-ios-signed-${{ env.EXPORT_METHOD }}
+          path: ${{ runner.temp }}/signed/*.ipa
+          if-no-files-found: warn
+
+      - name: Remove the API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
