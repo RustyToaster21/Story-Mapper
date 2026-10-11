@@ -4,8 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/Projects/story-mapper
-ExecStart=%h/.local/node/bin/node server/index.js
+# The README's install command replaces this with the project's actual folder.
+WorkingDirectory=%h/story-mapper
+# Finds node from your distro's packages or a per-user install in ~/.local/node.
+Environment=PATH=%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env node server/index.js
 Environment=PORT=4777
 Restart=on-failure
 

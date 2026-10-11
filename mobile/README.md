@@ -36,7 +36,7 @@ npm run apk          # -> android/app/build/outputs/apk/debug/app-debug.apk
 npm run serve        # try the Android build of the frontend in a desktop browser (localhost:4790)
 ```
 
-`npm run apk` stages the web app into `www/`, syncs it into the Android project and runs Gradle. `android/local.properties` must point at your SDK (`sdk.dir=/home/<you>/Android/Sdk`); it's gitignored. To open the project in Android Studio instead, run `npm run sync && npx cap open android`.
+`npm run apk` stages the web app into `www/`, syncs it into the Android project and runs Gradle. Gradle finds the SDK through `ANDROID_HOME`, which the installers in the main README set. Alternatively, put `sdk.dir=/home/<you>/Android/Sdk` in `android/local.properties` (gitignored). To open the project in Android Studio instead, run `npm run sync && npx cap open android`.
 
 ### Testing in the emulator
 

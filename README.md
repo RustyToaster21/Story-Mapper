@@ -21,21 +21,81 @@ Ready-to-run builds are attached to the [latest release](https://github.com/Rust
 | macOS 13+ (Intel) | `story-mapper-1.0.0-mac-x64.zip` | Same as above. |
 | Linux (x86_64) | `story-mapper-1.0.0-x86_64.AppImage` | `chmod +x` it and run. See [desktop/README.md](desktop/README.md). |
 | Android 7.0+ | `story-mapper-1.0.0-android.apk` | Open it on the device and allow the install. See [mobile/README.md](mobile/README.md). |
-| Web app (any OS) | this repository | `npm install && npm start`, then open <http://localhost:4777> (below). |
+| Web app (any OS) | this repository | `npm install && npm start`, then open <http://localhost:4777>. Setup guides below for [Linux](#linux-setup), [macOS](#macos-setup) and [Windows](#windows-11-setup). |
 
 `SHA256SUMS.txt` in the release lists each file's checksum. The builds aren't signed with a developer certificate, so Windows SmartScreen, macOS Gatekeeper and Android Play Protect will warn on first install.
 
-## Run it (Linux / macOS)
+## Linux setup
 
-Requires Node.js 22 or newer. Starting from a fresh machine? See [macOS setup](#macos-setup) or [Windows 11 setup](#windows-11-setup) below.
+Works on any current x86_64 or arm64 distro. The only thing Story Mapper needs is **Node.js 22 or newer** (npm is included); everything else is installed by `npm install`. Not on Linux? See [macOS setup](#macos-setup) or [Windows 11 setup](#windows-11-setup) below.
+
+### 1. Install Node.js 22 or newer
+
+Pick your distro. Then check with `node -v`, which should print v22 or newer.
+
+**Arch Linux, CachyOS, Manjaro, EndeavourOS**
 
 ```sh
-cd ~/Projects/story-mapper
+sudo pacman -S --needed nodejs npm
+```
+
+**Debian 12 / 13, Ubuntu 22.04 / 24.04, Linux Mint, Pop!_OS**: these ship an older Node.js, so install it from NodeSource's repository:
+
+```sh
+sudo apt-get update && sudo apt-get install -y curl ca-certificates
+curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
+sudo bash /tmp/nodesource_setup.sh
+sudo apt-get install -y nodejs
+```
+
+**Ubuntu 26.04 or newer**: Node.js 22 is in the regular repositories:
+
+```sh
+sudo apt-get update && sudo apt-get install -y nodejs npm curl
+```
+
+**Fedora**
+
+```sh
+sudo dnf install -y nodejs
+```
+
+**RHEL, Rocky Linux, AlmaLinux 9**
+
+```sh
+sudo dnf module install -y nodejs:22
+```
+
+**RHEL, Rocky Linux, AlmaLinux 10**
+
+```sh
+sudo dnf install -y nodejs npm
+```
+
+### 2. Get the project
+
+```sh
+cd ~
+curl -fsSL https://github.com/RustyToaster21/Story-Mapper/archive/refs/heads/master.tar.gz | tar -xz
+mv Story-Mapper-master story-mapper
+cd story-mapper
+```
+
+Or with Git (install it with `sudo pacman -S git`, `sudo apt-get install git` or `sudo dnf install git`):
+
+```sh
+git clone https://github.com/RustyToaster21/Story-Mapper.git ~/story-mapper
+cd ~/story-mapper
+```
+
+### 3. Install dependencies and start
+
+```sh
 npm install        # first time only
 npm start
 ```
 
-Then open <http://localhost:4777>. A demo story ("The Lighthouse at Gull Point") is created on first run.
+Then open <http://localhost:4777>. A demo story ("The Lighthouse at Gull Point") is created on first run. **Ctrl+C** stops the server.
 
 | Setting | Default | |
 |---|---|---|
@@ -45,13 +105,21 @@ Then open <http://localhost:4777>. A demo story ("The Lighthouse at Gull Point")
 
 `npm run dev` restarts the server when files change; `npm test` runs the test suite.
 
-### Keep it running in the background (optional, Linux)
+### Keep it running in the background (optional)
+
+Install it as a systemd user service. Run this from the project folder; it records that folder's path in the service:
 
 ```sh
 mkdir -p ~/.config/systemd/user
-cp deploy/story-mapper.service ~/.config/systemd/user/
+sed "s#^WorkingDirectory=.*#WorkingDirectory=$PWD#" deploy/story-mapper.service > ~/.config/systemd/user/story-mapper.service
 systemctl --user daemon-reload
 systemctl --user enable --now story-mapper
+```
+
+It starts now and whenever you log in. To keep it running while you're logged out, and from boot, also run `sudo loginctl enable-linger $USER`. View its log with `journalctl --user -u story-mapper`. To stop and remove it:
+
+```sh
+systemctl --user disable --now story-mapper && rm ~/.config/systemd/user/story-mapper.service
 ```
 
 ## macOS setup
@@ -316,16 +384,38 @@ Double-clicking it opens a console window running the server plus your browser. 
 
 ## Android app
 
-An offline Android version lives in [`mobile/`](mobile/README.md). It's the same frontend, wrapped with Capacitor, with stories saved on the device. To build the APK on CachyOS / Arch you need JDK 21, the Android SDK (platform 36 + build-tools 36) and Node.js 22.12+. This one-liner installs or updates all of them. It uses sudo, pacman and paru, puts the SDK in `~/Android/Sdk`, and **accepts the Android SDK licenses on your behalf**:
+An offline Android version lives in [`mobile/`](mobile/README.md). It's the same frontend, wrapped with Capacitor, with stories saved on the device. Building the APK needs **Node.js 22.12+** (see [Linux setup](#linux-setup)), **JDK 21**, and the **Android SDK** (platform 36 + build-tools 36).
+
+Pick the one-liner for your distro. Each one:
+- installs JDK 21, from your distro if it has it, otherwise [Eclipse Temurin](https://adoptium.net) (Debian 12, Fedora 44+)
+- downloads Google's Android command-line tools into `~/Android/Sdk`, checking the download's SHA-1
+- installs the SDK packages and **accepts the Android SDK licenses on your behalf**
+- adds `JAVA_HOME` and `ANDROID_HOME` to `~/.profile`, plus `~/.bashrc`, `~/.zshrc` and fish's config if you have them
+
+It uses `sudo` and downloads about 1 GB.
+
+**Arch Linux, CachyOS, Manjaro, EndeavourOS**
 
 ```bash
-bash -c 'S=; sudo pacman -S --needed jdk21-openjdk android-tools && sudo archlinux-java set java-21-openjdk && paru -S --needed android-sdk-cmdline-tools-latest && S=$(find /opt/android-sdk -path "*/bin/sdkmanager" -type f | head -1) && export ANDROID_HOME="$HOME/Android/Sdk" && mkdir -p "$ANDROID_HOME" && (yes | "$S" --sdk_root="$ANDROID_HOME" --licenses > /dev/null) && "$S" --sdk_root="$ANDROID_HOME" "cmdline-tools;latest" "platform-tools" "platforms;android-36" "build-tools;36.0.0" && cd /tmp && L=$(curl -fsS https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt | grep "linux-x64.tar.xz$") && N=${L##* } && curl -fLO "https://nodejs.org/dist/latest-v22.x/$N" && echo "$L" | sha256sum -c - && rm -rf "$HOME/.local/node.new" && mkdir "$HOME/.local/node.new" && tar -xJf "$N" -C "$HOME/.local/node.new" --strip-components=1 && rm -rf "$HOME/.local/node" && mv "$HOME/.local/node.new" "$HOME/.local/node" && rm -f "$N" && for f in "$HOME/.zshrc" "$HOME/.profile"; do grep -q ANDROID_HOME "$f" || printf "\nexport ANDROID_HOME=\"\$HOME/Android/Sdk\"\nexport PATH=\"\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools:\$PATH\"\n" >> "$f"; done && (grep -q ANDROID_HOME "$HOME/.config/fish/config.fish" || printf "\nset -gx ANDROID_HOME \$HOME/Android/Sdk\nset -gx PATH \$ANDROID_HOME/cmdline-tools/latest/bin \$ANDROID_HOME/platform-tools \$PATH\n" >> "$HOME/.config/fish/config.fish") && java -version && "$HOME/.local/node/bin/node" -v && echo "All Android build tools installed - open a new terminal."'
+bash -c 'sudo pacman -S --needed jdk21-openjdk unzip curl && Z=commandlinetools-linux-16111833_latest.zip && A="$HOME/Android/Sdk" && J=$(dirname "$(dirname "$(readlink -f "$(ls /usr/lib/jvm/*21*/bin/javac | head -n1)")")") && [ -x "$J/bin/javac" ] && mkdir -p "$A/cmdline-tools" && cd /tmp && curl -fLO "https://dl.google.com/android/repository/$Z" && echo "e025545c62a8e64c7559119566a569fb1dec5f60  $Z" | sha1sum -c - && rm -rf "$A/cmdline-tools/latest" && unzip -q "$Z" -d "$A/cmdline-tools" && mv "$A/cmdline-tools/cmdline-tools" "$A/cmdline-tools/latest" && rm "$Z" && export JAVA_HOME="$J" && (yes | "$A/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null) && "$A/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" && for f in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do { [ -f "$f" ] || [ "$f" = "$HOME/.profile" ]; } && ! grep -q ANDROID_HOME "$f" 2>/dev/null && printf "\nexport JAVA_HOME=\"%s\"\nexport ANDROID_HOME=\"\$HOME/Android/Sdk\"\nexport PATH=\"\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools:\$PATH\"\n" "$J" >> "$f"; done; F="$HOME/.config/fish/config.fish"; if [ -f "$F" ] && ! grep -q ANDROID_HOME "$F"; then printf "\nset -gx JAVA_HOME %s\nset -gx ANDROID_HOME \$HOME/Android/Sdk\nset -gx PATH \$ANDROID_HOME/cmdline-tools/latest/bin \$ANDROID_HOME/platform-tools \$PATH\n" "$J" >> "$F"; fi; "$J/bin/java" -version && echo "Android build tools installed - open a new terminal."'
 ```
 
-Then:
+**Debian 12 / 13, Ubuntu 22.04 or newer, Linux Mint, Pop!_OS**
+
+```bash
+bash -c 'sudo apt-get update && if apt-cache show openjdk-21-jdk-headless > /dev/null 2>&1; then sudo apt-get install -y openjdk-21-jdk-headless curl unzip; else sudo apt-get install -y curl unzip gpg && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release; echo ${UBUNTU_CODENAME:-$VERSION_CODENAME}) main" | sudo tee /etc/apt/sources.list.d/adoptium.list > /dev/null && sudo apt-get update && sudo apt-get install -y temurin-21-jdk; fi && Z=commandlinetools-linux-16111833_latest.zip && A="$HOME/Android/Sdk" && J=$(dirname "$(dirname "$(readlink -f "$(ls /usr/lib/jvm/*21*/bin/javac | head -n1)")")") && [ -x "$J/bin/javac" ] && mkdir -p "$A/cmdline-tools" && cd /tmp && curl -fLO "https://dl.google.com/android/repository/$Z" && echo "e025545c62a8e64c7559119566a569fb1dec5f60  $Z" | sha1sum -c - && rm -rf "$A/cmdline-tools/latest" && unzip -q "$Z" -d "$A/cmdline-tools" && mv "$A/cmdline-tools/cmdline-tools" "$A/cmdline-tools/latest" && rm "$Z" && export JAVA_HOME="$J" && (yes | "$A/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null) && "$A/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" && for f in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do { [ -f "$f" ] || [ "$f" = "$HOME/.profile" ]; } && ! grep -q ANDROID_HOME "$f" 2>/dev/null && printf "\nexport JAVA_HOME=\"%s\"\nexport ANDROID_HOME=\"\$HOME/Android/Sdk\"\nexport PATH=\"\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools:\$PATH\"\n" "$J" >> "$f"; done; F="$HOME/.config/fish/config.fish"; if [ -f "$F" ] && ! grep -q ANDROID_HOME "$F"; then printf "\nset -gx JAVA_HOME %s\nset -gx ANDROID_HOME \$HOME/Android/Sdk\nset -gx PATH \$ANDROID_HOME/cmdline-tools/latest/bin \$ANDROID_HOME/platform-tools \$PATH\n" "$J" >> "$F"; fi; "$J/bin/java" -version && echo "Android build tools installed - open a new terminal."'
+```
+
+**Fedora, RHEL, Rocky Linux, AlmaLinux 9 / 10**
+
+```bash
+bash -c 'if dnf -q list --available java-21-openjdk-devel > /dev/null 2>&1 || rpm -q java-21-openjdk-devel > /dev/null 2>&1; then sudo dnf install -y java-21-openjdk-devel unzip; else printf "[Adoptium]\nname=Adoptium\nbaseurl=https://packages.adoptium.net/artifactory/rpm/%s/\$releasever/\$basearch\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public\n" "$(. /etc/os-release; echo $ID)" | sudo tee /etc/yum.repos.d/adoptium.repo > /dev/null && sudo dnf install -y temurin-21-jdk unzip; fi && Z=commandlinetools-linux-16111833_latest.zip && A="$HOME/Android/Sdk" && J=$(dirname "$(dirname "$(readlink -f "$(ls /usr/lib/jvm/*21*/bin/javac | head -n1)")")") && [ -x "$J/bin/javac" ] && mkdir -p "$A/cmdline-tools" && cd /tmp && curl -fLO "https://dl.google.com/android/repository/$Z" && echo "e025545c62a8e64c7559119566a569fb1dec5f60  $Z" | sha1sum -c - && rm -rf "$A/cmdline-tools/latest" && unzip -q "$Z" -d "$A/cmdline-tools" && mv "$A/cmdline-tools/cmdline-tools" "$A/cmdline-tools/latest" && rm "$Z" && export JAVA_HOME="$J" && (yes | "$A/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null) && "$A/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" && for f in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do { [ -f "$f" ] || [ "$f" = "$HOME/.profile" ]; } && ! grep -q ANDROID_HOME "$f" 2>/dev/null && printf "\nexport JAVA_HOME=\"%s\"\nexport ANDROID_HOME=\"\$HOME/Android/Sdk\"\nexport PATH=\"\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools:\$PATH\"\n" "$J" >> "$f"; done; F="$HOME/.config/fish/config.fish"; if [ -f "$F" ] && ! grep -q ANDROID_HOME "$F"; then printf "\nset -gx JAVA_HOME %s\nset -gx ANDROID_HOME \$HOME/Android/Sdk\nset -gx PATH \$ANDROID_HOME/cmdline-tools/latest/bin \$ANDROID_HOME/platform-tools \$PATH\n" "$J" >> "$F"; fi; "$J/bin/java" -version && echo "Android build tools installed - open a new terminal."'
+```
+
+Then, in a new terminal:
 
 ```sh
-cd mobile && npm install && npm run apk
+cd ~/story-mapper/mobile && npm install && npm run apk
 # -> mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
