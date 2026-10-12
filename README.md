@@ -21,9 +21,10 @@ Ready-to-run builds are attached to the [latest release](https://github.com/Rust
 | macOS 13+ (Intel) | `story-mapper-1.0.0-mac-x64.zip` | Same as above. |
 | Linux (x86_64) | `story-mapper-1.0.0-x86_64.AppImage` | `chmod +x` it and run. See [desktop/README.md](desktop/README.md). |
 | Android 7.0+ | `story-mapper-1.0.0-android.apk` | Open it on the device and allow the install. See [mobile/README.md](mobile/README.md). |
+| iOS / iPadOS 15+ | `story-mapper-1.0.0-ios-unsigned.ipa` | Sideload it with Sideloadly or AltStore and a free Apple ID. See [the sideloading steps](mobile/README.md#install-on-your-iphone-or-ipad-sideloading-free). |
 | Web app (any OS) | this repository | `npm install && npm start`, then open <http://localhost:4777>. Setup guides below for [Linux](#linux-setup), [macOS](#macos-setup) and [Windows](#windows-11-setup). |
 
-`SHA256SUMS.txt` in the release lists each file's checksum. The builds aren't signed with a developer certificate, so Windows SmartScreen, macOS Gatekeeper and Android Play Protect will warn on first install.
+`SHA256SUMS.txt` in the release lists each file's checksum. The builds aren't signed with a developer certificate, so Windows SmartScreen, macOS Gatekeeper and Android Play Protect will warn on first install. The iOS build is unsigned; the sideloading tool signs it with your Apple ID when it installs.
 
 ## Linux setup
 
