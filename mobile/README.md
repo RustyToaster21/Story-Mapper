@@ -56,6 +56,8 @@ The debug APK is signed with the SDK's debug key, which is fine for installing o
 
 iOS apps can only be built with Apple's Xcode on macOS, so the iOS app is built by GitHub Actions on a GitHub-hosted Mac ([`.github/workflows/ios.yml`](../.github/workflows/ios.yml)). You don't need a Mac yourself.
 
+**Status: working.** The unsigned build has been sideloaded onto a real device, and it runs flawlessly. Every workflow run also tests it on a simulated iPhone.
+
 ### Getting a build
 
 The workflow runs on every push to `master` that changes the app, and on demand from **Actions → iOS → Run workflow**. Each run uploads an artifact called **story-mapper-ios**:
@@ -67,6 +69,20 @@ The workflow runs on every push to `master` that changes the app, and on demand 
 | `story-mapper-ios-unsigned.ipa` | An unsigned build for real devices. Sideloading tools such as Sideloadly or AltStore can sign it with a free Apple ID and install it on your own iPhone or iPad. Apps signed that way stop opening after 7 days until re-signed. |
 
 The run fails unless the app launches on the simulated iPhone and saves its demo story through the native file storage, so a green run means the build actually works.
+
+### Install on your iPhone or iPad (sideloading, free)
+
+This is how the app has been tested on a real device. It needs a computer, a USB cable and a free Apple ID; no developer membership is required.
+
+1. Download the **story-mapper-ios** artifact from the latest run under **Actions → iOS** (you need to be signed in to GitHub), and unzip it to get `story-mapper-ios-unsigned.ipa`.
+2. Install a sideloading tool on your computer, such as [Sideloadly](https://sideloadly.io) (Windows / macOS) or [AltStore](https://altstore.io).
+3. Connect the iPhone or iPad, open the `.ipa` in the tool, sign in with your Apple ID when asked, and start the install. The tool signs the app with your Apple ID and installs it.
+4. On the device, the first time:
+   - **iOS 16 or newer:** turn on **Settings → Privacy & Security → Developer Mode** and restart when asked.
+   - Trust the signature under **Settings → General → VPN & Device Management**: tap your Apple ID and choose **Trust**.
+5. Open **Story Mapper**.
+
+With a free Apple ID, sideloaded apps stop opening after 7 days. Re-install the same way to renew; your stories are kept. A free Apple ID can have up to 3 sideloaded apps at a time. A [signed build](#signed-builds-apple-developer-program) from a paid membership doesn't have these limits.
 
 ### Signed builds (Apple Developer Program)
 

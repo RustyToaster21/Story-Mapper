@@ -421,7 +421,9 @@ cd ~/story-mapper/mobile && npm install && npm run apk
 
 ## iOS app
 
-The same Capacitor app also targets iPhone and iPad (iOS 15+), from [`mobile/ios`](mobile/README.md#ios-iphone-and-ipad). iOS apps can only be built with Xcode on macOS, so a GitHub Actions workflow ([`.github/workflows/ios.yml`](.github/workflows/ios.yml)) builds it on a GitHub-hosted Mac; you don't need a Mac yourself. Every run tests the app on a simulated iPhone and uploads an unsigned build. With an Apple Developer Program membership, it can also produce signed Ad Hoc builds or upload to TestFlight. Setup steps are in [mobile/README.md](mobile/README.md#ios-iphone-and-ipad).
+The same Capacitor app also targets iPhone and iPad (iOS 15+), from [`mobile/ios`](mobile/README.md#ios-iphone-and-ipad). iOS apps can only be built with Xcode on macOS, so a GitHub Actions workflow ([`.github/workflows/ios.yml`](.github/workflows/ios.yml)) builds it on a GitHub-hosted Mac; you don't need a Mac yourself. Every run tests the app on a simulated iPhone and uploads an unsigned build.
+
+**Status: working.** The unsigned build has been sideloaded onto a real device, and it runs flawlessly. You can install it on your own iPhone or iPad for free with Sideloadly or AltStore and an Apple ID; see [the sideloading steps](mobile/README.md#install-on-your-iphone-or-ipad-sideloading-free). With an Apple Developer Program membership, the workflow can also produce signed Ad Hoc builds or upload to TestFlight. Setup steps are in [mobile/README.md](mobile/README.md#ios-iphone-and-ipad).
 
 ## Using it
 
